@@ -1,0 +1,6 @@
+
+message MyMessage {
+  required int32 a = 1;
+  optional string b = 2;
+  optional string x = 3 [default = "test"];
+}

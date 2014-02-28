@@ -1,0 +1,181 @@
+# Copyright 2014 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+
+    # --- getting schemas from protobufs ---
+
+    from polyglot import protobuf
+
+    pl = protobuf.ProtoLoader(roots=[''])
+    MyMessage = pl.load('mymessage.proto').MyMessage
+
+    msg = MyMessage(a=100, b='value')
+    protobuf.write_to_file('filename.pb', msg)
+
+    # --- translating from json ---
+
+    from polyglot import json
+
+    msg = json.read_file('filename.json', MyMessage)
+    protobuf.write_to_file('filename.pb', msg)
+
+"""
+
+from google.protobuf import descriptor
+from google.protobuf import descriptor_pb2
+from google.protobuf import message
+from google.protobuf import reflection
+from protoc import Importer, DiskSourceTree, StdErrErrorCollector, \
+    ToBinary
+import poly
+
+class MessageDef(object):
+    """A protobuf message definition.
+
+    This stores information about a message to be stored with a struct class.
+    This is initialized with a descriptor_pb, the other attributes are created
+    on demand.
+
+    Attributes:
+        descriptor_pb: descriptor_pb2.DescriptorProto.
+        descriptor: descriptor.Descriptor.
+        type: Type derived from message.Message.  Can be used to construct
+            actual message object instances.
+    """
+    def __init__(self, descriptor_pb):
+        self.descriptor_pb = descriptor_pb
+        self.__descriptor = None
+        self.__type = None
+
+    @property
+    def descriptor(self):
+        if self.__descriptor is None:
+            self.__descriptor = descriptor.MakeDescriptor(self.descriptor_pb)
+        return self.__descriptor
+
+    @property
+    def type(self):
+        if self.__type is None:
+            self.__type = reflection.GeneratedProtocolMessageType(
+                str(self.descriptor_pb.name),
+                (message.Message,),
+                {'DESCRIPTOR': self.descriptor})
+        return self.__type
+
+
+
+def convert_to_struct(message):
+    """Returns a poly.Struct class for the message.
+
+    Args:
+        message: descriptor_pb2.DescriptorProto
+    """
+    schema = {}
+    for field in message.field:
+
+        # TODO(mmuller): finish implementing this.
+        fdp = descriptor_pb2.FieldDescriptorProto
+        if field.type == fdp.TYPE_INT32:
+            type = int
+        elif field.type in (fdp.TYPE_FLOAT, fdp.TYPE_DOUBLE):
+            type = float
+        elif field.type == fdp.TYPE_STRING:
+            type = str
+        else:
+            raise NotImplementedError("Use of type %d which hasn't been "
+                                      "implemented yet")
+
+        default_val = (field.default_value if field.HasField('default_value') else
+                       poly.NoDefault)
+
+        field_def = poly.FieldDef(name=field.name, type=type, default=default_val)
+        schema[field.name] = field_def
+
+    struct = poly.make_struct(str(message.name), schema)
+    poly.set_translation_data(struct, MessageDef, MessageDef(message))
+    return struct
+
+
+class ProtoDefFile(object):
+    """A protobuf definiton file object.
+
+    Instances should contain an attribute for every message in a proto
+    descriptor file.
+    """
+
+class ProtoLoader(object):
+
+    def __init__(self, roots=None):
+        """
+        Args:
+            roots: list of root directories or None.  The root directories to
+                load .proto files from, both user specified and imported ones.
+        """
+        self.__source_tree = DiskSourceTree()
+        if roots:
+            for root in roots:
+                self.__source_tree.MapPath('', root)
+        self.__importer = Importer(self.__source_tree, StdErrErrorCollector())
+
+    def load(self, path):
+        """Loads a protodefinition file and returns a proxy object for it.
+
+        Args:
+            path: (str) .proto file path name.
+
+        Returns:
+            An object with a field for every message defined in the protofile,
+            where the fields are assigned to poly.Struct classes whose schema
+            reflects that of the message.
+        """
+
+        # Load the file descriptor and convert it to a protobuf.
+        file_des = self.__importer.Import(path)
+        file_des_pb = descriptor_pb2.FileDescriptorProto()
+        file_des_pb.MergeFromString(ToBinary(file_des))
+
+        result = ProtoDefFile()
+
+        # Now convert all messages in the file descriptor to schemas.
+        for message in file_des_pb.message_type:
+            message_struct = convert_to_struct(message)
+            setattr(result, message.name, message_struct)
+
+        return result
+
+def struct_to_message(struct):
+    """Returns a message object for the structure.
+
+    Args:
+        struct: poly.Struct.
+
+    Returns:
+        google.protobuf.message.Message.
+    """
+    msg_def = poly.get_translation_data(struct, MessageDef)
+    msg = msg_def.type()
+    fdp = descriptor_pb2.FieldDescriptorProto
+
+    for field in msg_def.descriptor_pb.field:
+        try:
+            val = getattr(struct, field.name)
+            setattr(msg, field.name, val)
+        except AttributeError:
+            # Make sure it's optional.
+            if field.label != fdp.LABEL_OPTIONAL:
+                raise AttributeError('Required field %s is undefined' %
+                                     field.name)
+
+    return msg
