@@ -15,6 +15,13 @@
 import poly
 import unittest
 
+
+class TestStruct(poly.Struct):
+    a = poly.FieldDef(None, int, 'a field', 100)
+    b = poly.FieldDef(None, str, 'b field', 200)
+    u = poly.FieldDef(None, int, 'optional field', poly.Undefined)
+
+
 class PolyTests(unittest.TestCase):
     def testLoose(self):
         s = poly.LooseStruct(a = 1, b = 2)
@@ -24,10 +31,6 @@ class PolyTests(unittest.TestCase):
         assert s.x == 100
 
     def testStrict(self):
-        class TestStruct(poly.Struct):
-            a = poly.FieldDef(None, int, 'a field', 100)
-            b = poly.FieldDef(None, str, 'b field', 200)
-
         self.assertRaises(AttributeError, TestStruct, x=2)
         self.assertRaises(TypeError, TestStruct, a='string')
 
@@ -36,10 +39,6 @@ class PolyTests(unittest.TestCase):
         self.assertEquals(t.b, 'string')
 
     def testUndefinedFields(self):
-        class TestStruct(poly.Struct):
-            a = poly.FieldDef(None, int, 'a field', 100)
-            u = poly.FieldDef(None, int, 'optional field', poly.Undefined)
-
         t = TestStruct(a=200)
         def GetU():
             return t.u
@@ -50,6 +49,18 @@ class PolyTests(unittest.TestCase):
             t.u = 'hey now!'
         self.assertRaises(TypeError, SetUToStr)
 
+    def testCompare(self):
+        self.assertEquals(poly.LooseStruct(a=1, b='foo'),
+                          poly.LooseStruct(a=1, b='foo'))
+        self.assertNotEquals(poly.LooseStruct(a=1, b='foo'),
+                             poly.LooseStruct(a=1, b='foo', c=1.5))
+
+        self.assertEquals(TestStruct(a=100, b='value'),
+                          TestStruct(a=100, b='value'))
+        self.assertNotEquals(TestStruct(a=100, b='value'),
+                             TestStruct(a=100, b='different value'))
+        self.assertNotEquals(TestStruct(a=100, b='value'),
+                             TestStruct(a=100, b='value', u=0))
 
 if __name__ == '__main__':
     unittest.main()

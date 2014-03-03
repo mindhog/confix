@@ -140,6 +140,9 @@ class Struct(object):
                 raise AttributeError(attr)
         self._attrs[attr] = val
 
+    def __cmp__(self, other):
+        return cmp(self._attrs, other._attrs)
+
 
 def set_translation_data(struct, key, value):
     """Sets arbitrary translation data on a Struct class.
@@ -169,13 +172,15 @@ def get_translation_data(struct, key):
     """
     return struct._translation_data[key]
 
+
 class LooseStruct(Struct):
     """A convenience class that lets you define a Struct with no schema."""
 
     _strict = False
 
+    def __cmp__(self, other):
+        return cmp(self._attrs, other._attrs)
+
 
 def get_attrs(struct):
-    return struct._attrs
-
-
+    return struct._schema
