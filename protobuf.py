@@ -41,6 +41,7 @@ from protoc import Importer, DiskSourceTree, StdErrErrorCollector, \
     ToBinary
 import poly
 
+
 class MessageDef(object):
     """A protobuf message definition.
 
@@ -75,7 +76,6 @@ class MessageDef(object):
         return self.__type
 
 
-
 def convert_to_struct(message):
     """Returns a poly.Struct class for the message.
 
@@ -92,7 +92,7 @@ def convert_to_struct(message):
         elif field.type in (fdp.TYPE_FLOAT, fdp.TYPE_DOUBLE):
             type = float
         elif field.type == fdp.TYPE_STRING:
-            type = str
+            type = basestring
         else:
             raise NotImplementedError("Use of type %d which hasn't been "
                                       "implemented yet")
@@ -114,6 +114,7 @@ class ProtoDefFile(object):
     Instances should contain an attribute for every message in a proto
     descriptor file.
     """
+
 
 class ProtoLoader(object):
 
@@ -155,6 +156,7 @@ class ProtoLoader(object):
 
         return result
 
+
 def struct_to_message(struct):
     """Returns a message object for the structure.
 
@@ -179,3 +181,39 @@ def struct_to_message(struct):
                                      field.name)
 
     return msg
+
+
+def message_to_struct(msg, struct_type):
+    """Converts a protobuf message to a Struct.
+
+    Args:
+        msg: message.Message
+        struct_type: type derived from Struct.  The struct type to extract.
+    """
+    result = struct_type()
+    for name, field_def in poly.get_attrs(struct_type).iteritems():
+        if msg.HasField(name):
+            setattr(result, name, getattr(msg, name))
+    return result
+
+
+def string_to_struct(string, struct_type):
+    """Returns an instance of 'struct_type' parsed from 'string'.
+
+    Args:
+        string: str.  A string containing a serialized protobuf of type
+            corresponding to 'struct'.
+        struct_type: type derived from poly.Struct.  The structure type that
+            we are returning an instance of.
+
+    Returns:
+        Instance of struct_type.
+
+    Raises:
+        KeyError: The struct_type has never been bound to a message type.
+    """
+    msg_def = poly.get_translation_data(struct_type, MessageDef)
+    msg = msg_def.type()
+    msg.MergeFromString(string)
+
+    return message_to_struct(msg, struct_type)

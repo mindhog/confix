@@ -40,6 +40,12 @@ class ProtobufTests(unittest.TestCase):
         self.assertEquals(msg.b, 'data')
         self.assertFalse(msg.HasField('x'))
 
+        # Serialize the message to a string and try to resurrect it as a
+        # struct.
+        bin_string = msg.SerializeToString()
+        resurrected = protobuf.string_to_struct(bin_string, MyMessage)
+        self.assertEquals(resurrected, struct)
+
 
 if __name__ == '__main__':
     unittest.main()
