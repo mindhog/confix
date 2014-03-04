@@ -46,6 +46,10 @@ class ProtobufTests(unittest.TestCase):
         resurrected = protobuf.string_to_struct(bin_string, MyMessage)
         self.assertEquals(resurrected, struct)
 
+    def testFileNotFound(self):
+        loader = protobuf.ProtoLoader(roots=[''])
+        self.assertRaises(protobuf.ProtoFileNotFound, loader.load, 'bogus.proto')
+
 
 if __name__ == '__main__':
     unittest.main()

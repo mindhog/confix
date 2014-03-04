@@ -116,6 +116,14 @@ class ProtoDefFile(object):
     """
 
 
+class Error(Exception):
+    """Error base class for protobufs."""
+
+
+class ProtoFileNotFound(Error):
+    """Raised by ProtoLoader.load() when the protofile is not found."""
+
+
 class ProtoLoader(object):
 
     def __init__(self, roots=None):
@@ -128,7 +136,8 @@ class ProtoLoader(object):
         if roots:
             for root in roots:
                 self.__source_tree.MapPath('', root)
-        self.__importer = Importer(self.__source_tree, StdErrErrorCollector())
+        self.__error_collector = StdErrErrorCollector()
+        self.__importer = Importer(self.__source_tree, self.__error_collector)
 
     def load(self, path):
         """Loads a protodefinition file and returns a proxy object for it.
@@ -140,10 +149,15 @@ class ProtoLoader(object):
             An object with a field for every message defined in the protofile,
             where the fields are assigned to poly.Struct classes whose schema
             reflects that of the message.
+
+        Raises:
+            ProtoFileNotFound: The file wasn't found.
         """
 
         # Load the file descriptor and convert it to a protobuf.
         file_des = self.__importer.Import(path)
+        if not file_des:
+            raise ProtoFileNotFound()
         file_des_pb = descriptor_pb2.FileDescriptorProto()
         file_des_pb.MergeFromString(ToBinary(file_des))
 
