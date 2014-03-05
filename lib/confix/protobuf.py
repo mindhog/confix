@@ -16,7 +16,7 @@
 
     # --- getting schemas from protobufs ---
 
-    from polyglot import protobuf
+    from confix import protobuf
 
     pl = protobuf.ProtoLoader(roots=[''])
     MyMessage = pl.load('mymessage.proto').MyMessage
@@ -26,7 +26,7 @@
 
     # --- translating from json ---
 
-    from polyglot import json
+    from confix import json
 
     msg = json.read_file('filename.json', MyMessage)
     protobuf.write_to_file('filename.pb', msg)
@@ -39,7 +39,7 @@ from google.protobuf import message
 from google.protobuf import reflection
 from protoc import Importer, DiskSourceTree, StdErrErrorCollector, \
     ToBinary
-import poly
+import confix
 
 
 class MessageDef(object):
@@ -77,7 +77,7 @@ class MessageDef(object):
 
 
 def convert_to_struct(message):
-    """Returns a poly.Struct class for the message.
+    """Returns a confix.Struct class for the message.
 
     Args:
         message: descriptor_pb2.DescriptorProto
@@ -98,13 +98,13 @@ def convert_to_struct(message):
                                       "implemented yet")
 
         default_val = (field.default_value if field.HasField('default_value') else
-                       poly.NoDefault)
+                       confix.NoDefault)
 
-        field_def = poly.FieldDef(name=field.name, type=type, default=default_val)
+        field_def = confix.FieldDef(name=field.name, type=type, default=default_val)
         schema[field.name] = field_def
 
-    struct = poly.make_struct(str(message.name), schema)
-    poly.set_translation_data(struct, MessageDef, MessageDef(message))
+    struct = confix.make_struct(str(message.name), schema)
+    confix.set_translation_data(struct, MessageDef, MessageDef(message))
     return struct
 
 
@@ -147,7 +147,7 @@ class ProtoLoader(object):
 
         Returns:
             An object with a field for every message defined in the protofile,
-            where the fields are assigned to poly.Struct classes whose schema
+            where the fields are assigned to confix.Struct classes whose schema
             reflects that of the message.
 
         Raises:
@@ -175,12 +175,12 @@ def struct_to_message(struct):
     """Returns a message object for the structure.
 
     Args:
-        struct: poly.Struct.
+        struct: confix.Struct.
 
     Returns:
         google.protobuf.message.Message.
     """
-    msg_def = poly.get_translation_data(struct, MessageDef)
+    msg_def = confix.get_translation_data(struct, MessageDef)
     msg = msg_def.type()
     fdp = descriptor_pb2.FieldDescriptorProto
 
@@ -205,7 +205,7 @@ def message_to_struct(msg, struct_type):
         struct_type: type derived from Struct.  The struct type to extract.
     """
     result = struct_type()
-    for name, field_def in poly.get_attrs(struct_type).iteritems():
+    for name, field_def in confix.get_attrs(struct_type).iteritems():
         if msg.HasField(name):
             setattr(result, name, getattr(msg, name))
     return result
@@ -217,7 +217,7 @@ def string_to_struct(string, struct_type):
     Args:
         string: str.  A string containing a serialized protobuf of type
             corresponding to 'struct'.
-        struct_type: type derived from poly.Struct.  The structure type that
+        struct_type: type derived from confix.Struct.  The structure type that
             we are returning an instance of.
 
     Returns:
@@ -226,7 +226,7 @@ def string_to_struct(string, struct_type):
     Raises:
         KeyError: The struct_type has never been bound to a message type.
     """
-    msg_def = poly.get_translation_data(struct_type, MessageDef)
+    msg_def = confix.get_translation_data(struct_type, MessageDef)
     msg = msg_def.type()
     msg.MergeFromString(string)
 

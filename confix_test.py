@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import poly
+import confix
 import unittest
 
 
-class TestStruct(poly.Struct):
-    a = poly.FieldDef(None, int, 'a field', 100)
-    b = poly.FieldDef(None, str, 'b field', 200)
-    u = poly.FieldDef(None, int, 'optional field', poly.Undefined)
+class TestStruct(confix.Struct):
+    a = confix.FieldDef(None, int, 'a field', 100)
+    b = confix.FieldDef(None, str, 'b field', 200)
+    u = confix.FieldDef(None, int, 'optional field', confix.Undefined)
 
 
 class PolyTests(unittest.TestCase):
     def testLoose(self):
-        s = poly.LooseStruct(a = 1, b = 2)
+        s = confix.LooseStruct(a = 1, b = 2)
         assert s.a == 1
         assert s.b == 2
         s.x = 100
@@ -50,10 +50,10 @@ class PolyTests(unittest.TestCase):
         self.assertRaises(TypeError, SetUToStr)
 
     def testCompare(self):
-        self.assertEquals(poly.LooseStruct(a=1, b='foo'),
-                          poly.LooseStruct(a=1, b='foo'))
-        self.assertNotEquals(poly.LooseStruct(a=1, b='foo'),
-                             poly.LooseStruct(a=1, b='foo', c=1.5))
+        self.assertEquals(confix.LooseStruct(a=1, b='foo'),
+                          confix.LooseStruct(a=1, b='foo'))
+        self.assertNotEquals(confix.LooseStruct(a=1, b='foo'),
+                             confix.LooseStruct(a=1, b='foo', c=1.5))
 
         self.assertEquals(TestStruct(a=100, b='value'),
                           TestStruct(a=100, b='value'))

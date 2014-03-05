@@ -14,7 +14,7 @@
 
 import unittest
 
-import protobuf
+from confix import protobuf
 
 
 class ProtobufTests(unittest.TestCase):
