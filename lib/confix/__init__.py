@@ -17,10 +17,8 @@
     schema:
 
     class MyStruct(Struct):
-        _schema = {
-            'foo': FieldDef('foo', type=int, doc='foo field', default=100),
-            'bar': FieldDef('bar', type=str, doc='bar field'),
-        }
+        foo = FieldDef(type=int, doc='foo field', default=100)
+        bar = FieldDef(type=str, doc='bar field')
 
     Fields may not begin with underscores, leading underscores are used by
     the Struct classes for internal data.
@@ -85,7 +83,6 @@ class FieldDef:
         A field definition.
 
         Inst-vars:
-            name: [str]
             type: [any] argument type object.
             doc: [str] argument documentation.
             default: [any or NoDefault or Undefined] default value.  The special
@@ -94,13 +91,14 @@ class FieldDef:
                 special value of Undefined indicates that there is no default
                 value and that the creator of the structure doesn't need to
                 define one.
+            name: [str] the field name.
     """
 
-    def __init__(self, name, type=None, doc=None, default=NoDefault):
-        self.name = name
+    def __init__(self, type=None, doc=None, default=NoDefault, name=None):
         self.type = type
         self.doc = doc
         self.default = default
+        self.name = name
 
     def validate(self, val):
         """

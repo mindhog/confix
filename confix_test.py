@@ -17,9 +17,9 @@ import unittest
 
 
 class TestStruct(confix.Struct):
-    a = confix.FieldDef(None, int, 'a field', 100)
-    b = confix.FieldDef(None, str, 'b field', 200)
-    u = confix.FieldDef(None, int, 'optional field', confix.Undefined)
+    a = confix.FieldDef(int, 'a field', 100)
+    b = confix.FieldDef(str, 'b field', 200)
+    u = confix.FieldDef(int, 'optional field', confix.Undefined)
 
 
 class PolyTests(unittest.TestCase):
