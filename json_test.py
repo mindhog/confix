@@ -30,6 +30,11 @@ class JsonTest(unittest.TestCase):
                                     TestStruct)
         self.assertEquals(obj, TestStruct(a=100, b='some value'))
 
+    def testToJson(self):
+        obj = TestStruct(a=100, b='test val')
+        self.assertEquals(json.struct_to_string(obj),
+                          '{"a": 100, "b": "test val"}')
+
 
 if __name__ == '__main__':
     unittest.main()

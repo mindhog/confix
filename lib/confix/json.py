@@ -16,6 +16,7 @@ import simplejson
 
 import confix
 
+
 def dict_to_struct(json_dict, struct_type=None):
     """Convert a dictionary representation of a JSON object to a Struct.
 
@@ -39,6 +40,7 @@ def dict_to_struct(json_dict, struct_type=None):
         setattr(result, key, val)
     return result
 
+
 def string_to_struct(string_val, struct_type=None):
     """Convert a JSON string to a structure.
 
@@ -52,3 +54,25 @@ def string_to_struct(string_val, struct_type=None):
     """
     dict_val = simplejson.loads(string_val)
     return dict_to_struct(dict_val, struct_type)
+
+
+def _encoder(obj):
+    if isinstance(obj, (confix.Struct, confix.LooseStruct)):
+        json_dict = {}
+        for attr, field_def in confix.get_attrs(obj).iteritems():
+            json_dict[attr] = getattr(obj, attr)
+        return json_dict
+    else:
+        raise TypeError('cannot convert %r to json' % obj)
+
+
+def struct_to_string(struct):
+    """Returns a JSON string representation of the struct.
+
+    Args:
+        struct: confix.Struct or confix.LooseStruct.
+
+    Returns:
+        str.
+    """
+    return simplejson.dumps(struct, default=_encoder)
