@@ -56,11 +56,13 @@ def string_to_struct(string_val, struct_type=None):
     return dict_to_struct(dict_val, struct_type)
 
 
-def _encoder(obj):
-    if isinstance(obj, (confix.Struct, confix.LooseStruct)):
+def _encode(obj):
+    if isinstance(obj, (confix.Struct)):
         json_dict = {}
-        for attr, field_def in confix.get_attrs(obj).iteritems():
-            json_dict[attr] = getattr(obj, attr)
+        for attr, val in confix.get_attrs(obj).iteritems():
+            if isinstance(val, confix.Struct):
+                val = _encode(val)
+            json_dict[attr] = val
         return json_dict
     else:
         raise TypeError('cannot convert %r to json' % obj)
@@ -75,4 +77,4 @@ def struct_to_string(struct):
     Returns:
         str.
     """
-    return simplejson.dumps(struct, default=_encoder)
+    return simplejson.dumps(struct, default=_encode)

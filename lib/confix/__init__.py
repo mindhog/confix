@@ -180,5 +180,24 @@ class LooseStruct(Struct):
         return cmp(self._attrs, other._attrs)
 
 
-def get_attrs(struct):
+def get_schema(struct):
+    """Returns the schema for a struct instance.
+
+    Args:
+        struct: Struct instance.
+
+    Returns:
+        dict of str: FieldDef.
+    """
     return struct._schema
+
+def get_attrs(struct):
+    """Returns the attributes of the structure as a dictionary.
+
+    Args:
+        struct: Struct instance.
+
+    Returns:
+        dict of str: object.
+    """
+    return struct._attrs

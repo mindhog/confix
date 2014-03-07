@@ -205,7 +205,7 @@ def message_to_struct(msg, struct_type):
         struct_type: type derived from Struct.  The struct type to extract.
     """
     result = struct_type()
-    for name, field_def in confix.get_attrs(struct_type).iteritems():
+    for name, field_def in confix.get_schema(struct_type).iteritems():
         if msg.HasField(name):
             setattr(result, name, getattr(msg, name))
     return result
