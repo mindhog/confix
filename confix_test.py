@@ -62,5 +62,8 @@ class PolyTests(unittest.TestCase):
         self.assertNotEquals(TestStruct(a=100, b='value'),
                              TestStruct(a=100, b='value', u=0))
 
+    def testDir(self):
+        self.assertEquals(dir(TestStruct(a=1, b='two')), ['a', 'b'])
+
 if __name__ == '__main__':
     unittest.main()

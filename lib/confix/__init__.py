@@ -141,6 +141,9 @@ class Struct(object):
     def __cmp__(self, other):
         return cmp(self._attrs, other._attrs)
 
+    def __dir__(self):
+        return sorted(self._attrs.keys())
+
 
 def set_translation_data(struct, key, value):
     """Sets arbitrary translation data on a Struct class.
