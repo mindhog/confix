@@ -78,3 +78,28 @@ def struct_to_string(struct):
         str.
     """
     return simplejson.dumps(struct, default=_encode)
+
+def read_struct(file, struct_type=None):
+    """Returns a json struct read from the specified file.
+
+    Args:
+        file: file object or filename string.
+        struct_type: type derived from confix.Struct or None. The struct type
+            to create an instance of.  If None, creates a confix.LooseStruct.
+
+    Returns:
+        Struct.
+    """
+    if isinstance(file, basestring):
+        file = open(file)
+    return dict_to_struct(simplejson.load(file), struct_type)
+
+def write_struct(file, struct):
+    """Write the struct as JSON to the specified filename.
+
+    Args:
+        file: file object or filename string.
+    """
+    if isinstance(file, basestring):
+        file = open(file, 'w')
+    file.write(struct_to_string(struct))

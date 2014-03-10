@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import StringIO
 import unittest
 import confix
 from confix import json
@@ -35,6 +36,19 @@ class JsonTest(unittest.TestCase):
         self.assertEquals(json.struct_to_string(obj),
                           '{"a": 100, "b": "test val"}')
 
+    def testReadWrite(self):
+        obj = json.read_struct(StringIO.StringIO('{"a": 100, "b": "test val"}'),
+                               TestStruct)
+        self.assertEquals(obj, TestStruct(a=100, b='test val'))
+        out = StringIO.StringIO()
+        json.write_struct(out, obj)
+        self.assertEquals(out.getvalue(), '{"a": 100, "b": "test val"}')
+
+        # Try it with a real file.
+        obj = TestStruct(a=100, b='test val')
+        json.write_struct('testfile.json', obj)
+        obj2 = json.read_struct('testfile.json', TestStruct)
+        self.assertEquals(obj, obj2)
 
 if __name__ == '__main__':
     unittest.main()
