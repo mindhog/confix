@@ -18,11 +18,11 @@ import unittest
 
 class TestStruct(confix.Struct):
     a = confix.FieldDef(int, 'a field', 100)
-    b = confix.FieldDef(str, 'b field', 200)
+    b = confix.FieldDef(str, 'b field', 'default value')
     u = confix.FieldDef(int, 'optional field', confix.Undefined)
 
 
-class PolyTests(unittest.TestCase):
+class ConfixTests(unittest.TestCase):
     def testLoose(self):
         s = confix.LooseStruct(a = 1, b = 2)
         assert s.a == 1
@@ -49,6 +49,21 @@ class PolyTests(unittest.TestCase):
             t.u = 'hey now!'
         self.assertRaises(TypeError, SetUToStr)
 
+    def testDefaultTypecheck(self):
+
+        def CreateBadStruct():
+            class BadStruct(confix.Struct):
+                field = confix.FieldDef(str, default=100)
+
+        self.assertRaises(TypeError, CreateBadStruct)
+
+    def testDefaultValues(self):
+        val = TestStruct()
+        # Don't rely on comparison, as it could be implemented differently and
+        # we test it below.
+        self.assertEquals(val.a, 100)
+        self.assertEquals(val.b, 'default value')
+
     def testCompare(self):
         self.assertEquals(confix.LooseStruct(a=1, b='foo'),
                           confix.LooseStruct(a=1, b='foo'))
@@ -61,6 +76,10 @@ class PolyTests(unittest.TestCase):
                              TestStruct(a=100, b='different value'))
         self.assertNotEquals(TestStruct(a=100, b='value'),
                              TestStruct(a=100, b='value', u=0))
+
+        # Verify that default fields are compared correctly.
+        self.assertEquals(TestStruct(a=100),
+                          TestStruct(a=100, b='default value'))
 
     def testDir(self):
         self.assertEquals(dir(TestStruct(a=1, b='two')), ['a', 'b'])

@@ -54,6 +54,10 @@ class _StructMetaclass(type):
                     raise TypeError('Expected a FieldDef for the value of '
                                     'attribute %s' % attr)
 
+                # If there is a default, make sure it's valid.
+                if val.default not in (Undefined, NoDefault):
+                    val.validate(val.default)
+
                 val.name = attr
                 schema[attr] = val
 
@@ -120,7 +124,14 @@ class Struct(object):
     def __init__(self, **kwargs):
         object.__init__(self)
         self.__dict__['_attrs'] = {}
-        for attr, val in kwargs.items():
+
+        # Pre-fill with all optional attributes.  We don't do setattr here
+        # because we don't need to type check.
+        for attr, field_def in self._schema.iteritems():
+            if field_def.default not in (Undefined, NoDefault):
+                setattr(self, attr, field_def.default)
+
+        for attr, val in kwargs.iteritems():
             setattr(self, attr, val)
 
     def __getattr__(self, attr):
