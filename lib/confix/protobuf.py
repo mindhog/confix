@@ -124,6 +124,10 @@ class ProtoFileNotFound(Error):
     """Raised by ProtoLoader.load() when the protofile is not found."""
 
 
+class LoaderAlreadyDefined(Error):
+    """Raised by add_root() when the loader is already defined."""
+
+
 class ProtoLoader(object):
 
     def __init__(self, roots=None):
@@ -187,7 +191,11 @@ def struct_to_message(struct):
     for field in msg_def.descriptor_pb.field:
         try:
             val = getattr(struct, field.name)
-            setattr(msg, field.name, val)
+
+            # Don't set optional fields that are the default value.
+            if (field.label != fdp.LABEL_OPTIONAL or
+                val != field.default_value):
+                setattr(msg, field.name, val)
         except AttributeError:
             # Make sure it's optional.
             if field.label != fdp.LABEL_OPTIONAL:
@@ -231,3 +239,49 @@ def string_to_struct(string, struct_type):
     msg.MergeFromString(string)
 
     return message_to_struct(msg, struct_type)
+
+
+# The global loader and its root directories.
+_loader = None
+_roots = []
+
+
+def load(proto_file):
+    """Loads the specified proto_file.
+
+    This is equivalent to ProtoLoader.load() except that it uses a global
+    ProtoLoader, which is probably suitable for most applications.
+
+    Args:
+        proto_file: str
+    """
+    global _loader, _roots
+    if not _loader:
+        _loader = ProtoLoader(_roots)
+    return _loader.load(proto_file)
+
+
+def clear_loader():
+    """Clears the global loader used by load().
+
+    This is primarily intended for testing purposes.
+    """
+    _loader = None
+
+
+def add_root(path):
+    """Adds a root path to the list of paths for the global loader.
+
+    See load().  Root paths used as root directories when searching for proto
+    files.
+
+    Args:
+        path: str.  A root path.
+
+    Raises:
+        LoaderAlreadyDefined: Root paths cannot be added because the loader
+        has already been created.
+    """
+    if _loader:
+        raise LoaderAlreadyDefined()
+    _roots.append(path)

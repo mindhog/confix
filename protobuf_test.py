@@ -31,7 +31,7 @@ class ProtobufTests(unittest.TestCase):
             msg.blech = 100
         self.assertRaises(AttributeError, SetBlech)
 
-    def testMessgeCreation(self):
+    def testMessageCreation(self):
         loader = protobuf.ProtoLoader(roots=[''])
         MyMessage = loader.load('test.proto').MyMessage
         struct = MyMessage(a=100, b='data')
@@ -49,6 +49,15 @@ class ProtobufTests(unittest.TestCase):
     def testFileNotFound(self):
         loader = protobuf.ProtoLoader(roots=[''])
         self.assertRaises(protobuf.ProtoFileNotFound, loader.load, 'bogus.proto')
+
+    def testGlobalLoader(self):
+        protobuf.clear_loader()
+        protobuf.add_root('')
+        MyMessage = protobuf.load('test.proto').MyMessage
+        self.assertEquals(MyMessage(a=100, b='data').a, 100)
+
+        self.assertRaises(protobuf.LoaderAlreadyDefined,
+                          protobuf.add_root, 'foo')
 
 
 if __name__ == '__main__':
