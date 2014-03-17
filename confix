@@ -22,6 +22,9 @@ if len(sys.argv) < 2:
     print 'Usage: confix <script> [command]'
     sys.exit(1)
 
+# Should make this a parameter.
+protobuf.add_root('')
+
 env = {'confix': confix, 'protobuf': protobuf, 'json': json}
 execfile(sys.argv[1], env)
 

@@ -22,6 +22,10 @@ class TestStruct(confix.Struct):
     u = confix.FieldDef(int, 'optional field', confix.Undefined)
 
 
+class OuterStruct(confix.Struct):
+    inner = confix.FieldDef(confix.Struct, 'nested struct')
+
+
 class ConfixTests(unittest.TestCase):
     def testLoose(self):
         s = confix.LooseStruct(a = 1, b = 2)
@@ -83,6 +87,61 @@ class ConfixTests(unittest.TestCase):
 
     def testDir(self):
         self.assertEquals(dir(TestStruct(a=1, b='two')), ['a', 'b'])
+
+    def testNesting(self):
+        outer = OuterStruct(inner=TestStruct(a=1, b='two'))
+        self.assertEquals(outer, outer)
+
+    def testLists(self):
+        class TypeWithLists(confix.Struct):
+            l = confix.FieldDef(confix.List(str), 'list of strings', [])
+
+        v = TypeWithLists(l=['eeny', 'meeny', 'miney'])
+
+        self.assertRaises(TypeError, v.l.append, 100)
+        self.assertRaises(TypeError, v.l.__setitem__, 0, 100)
+        v.l.append('moe')
+        self.assertEquals(v.l, confix.List(str)(['eeny', 'meeny', 'miney', 'moe']))
+        v.l[0] = 'serious'
+        self.assertEquals(v.l, ['serious', 'meeny', 'miney', 'moe'])
+
+    def testMaps(self):
+        class TypeWithMaps(confix.Struct):
+            m = confix.FieldDef(confix.Map(str, int), 'map of string to int',
+                                {})
+
+        v = TypeWithMaps(m={'first': 100, 'second': 200})
+        self.assertEquals(v.m, {'first': 100, 'second': 200})
+        self.assertEquals(v.m['first'], 100)
+        self.assertEquals(sorted(v.m.items()),
+                          [('first', 100), ('second', 200)])
+        self.assertEquals(sorted(v.m.iteritems()),
+                          [('first', 100), ('second', 200)])
+        self.assertEquals(sorted(v.m.keys()), ['first', 'second'])
+        self.assertEquals(sorted(v.m.iterkeys()), ['first', 'second'])
+        self.assertEquals(sorted(v.m.values()), [100, 200])
+        self.assertEquals(sorted(v.m.itervalues()), [100, 200])
+        v.m['third'] = 300
+        self.assertEquals(v.m, {'first': 100, 'second': 200, 'third': 300})
+        self.assertRaises(TypeError, v.m.__setitem__, 'boing!')
+        v.m = {'a': 1, 'b': 2}
+        self.assertEquals(v.m, {'a': 1, 'b': 2})
+        def set_bad_val():
+            v.m = 'blech!'
+        self.assertRaises(TypeError, set_bad_val)
+
+        # Test value conversions
+        m = confix.Map(str, confix.List(int))({'a': [1, 2]})
+        self.assertEquals(m, {'a': [1, 2]})
+        self.assertEquals(m.setdefault('b', [0]), confix.List(int)([0]))
+        self.assertEquals(m, {'a': [1, 2], 'b': [0]})
+        self.assertEquals(m.setdefault('a', [0]), [1, 2])
+        self.assertEquals(m, {'a': [1, 2], 'b': [0]})
+
+        self.assertEquals(m.get('c', [3]), confix.List(int)([3]))
+        self.assertEquals(m.get('a', [0]), [1, 2])
+        self.assertEquals(m, {'a': [1, 2], 'b': [0]})
+
 
 if __name__ == '__main__':
     unittest.main()
