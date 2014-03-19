@@ -82,12 +82,14 @@ def make_struct(name, schema):
     return _StructMetaclass(name, (Struct,), schema)
 
 
-def _convert(type, val):
+def _convert(type, val, convert_func=None):
     """Convert 'val' to an instance of 'type'.
 
     Args:
         type: type object.
         val: object.
+        convert_func: callable(type, val).  If specified, this is the function
+            to use to convert nested values.
 
     Returns:
         Instance of type.
@@ -95,11 +97,30 @@ def _convert(type, val):
     Raises:
         TypeError: The value was not convertible.
     """
-    if issubclass(type, Generic):
-        return type.convert(val)
-    elif not isinstance(val, type):
+    if isinstance(val, type):
+        return val
+    elif issubclass(type, Generic):
+        return type.convert(val, convert_func or _convert)
+    else:
         raise TypeError(val)
-    return val
+
+
+def convert_with_dicts(type, val):
+    """Convert 'val' to an instance of 'type'.
+
+    This is different from _convert in that it accepts dicts when converting
+    to a Struct.
+    """
+    try:
+        return _convert(type, val, convert_with_dicts)
+    except TypeError:
+        if issubclass(type, Struct) and isinstance(val, dict):
+            obj = type()
+            for key, val in val.iteritems():
+                setattr(obj, key, val)
+            return obj
+        else:
+            raise
 
 
 class FieldDef:
@@ -192,7 +213,7 @@ class Generic(object):
     """
 
     @classmethod
-    def convert(cls, value):
+    def convert(cls, value, convert_func=_convert):
         """Converts 'value' to the generic type.
 
         Converts or raises a TypeError if the value cannot be converter.  If
@@ -202,6 +223,8 @@ class Generic(object):
 
         Args:
             value: object
+            convert_func: callable(type, value).  If specified, this is a
+                function to convert nested objects.
         """
         raise NotImplementedError()
 
@@ -210,7 +233,7 @@ class _List(Generic):
     """Base class for List<T>."""
 
     def __init__(self, elems):
-        self._elems = elems
+        self._elems = list(elems)
 
     def __setitem__(self, index, val):
         self._elems[index] = _convert(self._elem_type, val)
@@ -233,19 +256,11 @@ class _List(Generic):
         return cmp(self._elems, other)
 
     @classmethod
-    def convert(cls, value):
+    def convert(cls, value, convert_func=_convert):
         if isinstance(value, cls):
             return value
         elif isinstance(value, list):
-            elems = []
-            for item in value:
-                if isinstance(cls._elem_type, Generic):
-                    item = cls._elem_type.convert(item)
-                elif not isinstance(item, cls._elem_type):
-                    raise TypeError(item)
-
-                elems.append(item)
-            return cls(elems)
+            return cls(convert_func(cls._elem_type, item) for item in value)
         else:
             raise TypeError(value)
 
@@ -272,20 +287,20 @@ def List(elem_type):
 class _Map(Generic):
     """Base class for Map<T>."""
 
-    def __init__(self, normal_map):
+    def __init__(self, normal_map, convert_func=_convert):
         self._map = {}
         for key, val in normal_map.iteritems():
-            self._map[_convert(self._key_type, key)] = (
-                _convert(self._val_type, val))
+            self._map[convert_func(self._key_type, key)] = (
+                convert_func(self._val_type, val))
 
     @classmethod
-    def convert(cls, val):
+    def convert(cls, val, convert_func=_convert):
         # Verify that we have iteritems.
         try:
             val.iteritems
         except AttributeError:
             raise TypeError(val)
-        return cls(val)
+        return cls(val, convert_func=convert_func)
 
     def __getitem__(self, key):
         return self._map[key]

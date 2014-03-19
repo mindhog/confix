@@ -31,6 +31,24 @@ class JsonTest(unittest.TestCase):
                                     TestStruct)
         self.assertEquals(obj, TestStruct(a=100, b='some value'))
 
+        obj = json.string_to_obj('[1, 2, 3]', confix.List(int))
+        self.assertEquals(obj, [1, 2, 3])
+
+        obj = json.string_to_obj('{"foo": 100, "bar": 200}',
+                                 confix.Map(str, int))
+        self.assertEquals(obj, {'foo': 100, 'bar': 200})
+
+        obj = json.string_to_obj('{"foo": {"a": 100, "b": "string val"}}',
+                                 confix.Map(str, TestStruct))
+        self.assertEquals(obj, {'foo': TestStruct(a=100, b='string val')})
+
+        obj = json.string_to_obj(('[{"a": 1, "b": "two"}, '
+                                  '{"a": 3, "b": "four"}]'),
+                                 confix.List(TestStruct))
+        self.assertEquals(obj,
+                          [TestStruct(a=1, b="two"),
+                           TestStruct(a=3, b="four")])
+
     def testToJson(self):
         obj = TestStruct(a=100, b='test val')
         self.assertEquals(json.struct_to_string(obj),
