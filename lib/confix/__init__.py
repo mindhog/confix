@@ -36,11 +36,16 @@
         Undefined.
 """
 
+import re
+
+
 class NoDefault(object):
     """Used as a marker for the default value of fields with no default."""
 
+
 class Undefined(object):
     """Used as a marker for the default value for fields that are undefined."""
+
 
 class _StructMetaclass(type):
 
@@ -123,6 +128,73 @@ def convert_with_dicts(type, val):
             raise
 
 
+def dict_to_struct(json_dict, struct_type=None, convert_func=None):
+    """Convert a dictionary representation of a JSON object to a Struct.
+
+    Converts a dictionary representation of a JSON object of the form created
+    by simplejson to a struct of the specified type.
+
+    Args:
+        json_dict: dict of str: object.
+        struct_type: type derived from confix.Struct or None. The struct type
+            to create an instance of.  If None, creates a LooseStruct.
+        convert_func: callable(type, value).  If specified, this is a
+                function to convert nested objects.
+
+    Returns:
+        Struct or LooseStruct.
+    """
+    if struct_type is None:
+        struct_type = LooseStruct
+    result = struct_type()
+    for key, val in json_dict.iteritems():
+        setattr_with_convert_func(result, key, val, convert_func or _convert)
+    return result
+
+
+# Regular expression to match a legal attribute name.
+ATTR_NAME_RX = re.compile(r'[a-zA-Z]\w*$')
+
+
+def intermediate_to_obj(intermediate, confix_type=None, convert_func=None):
+    """Converts from an intermediate representation to a confix object.
+
+    Args:
+        intermediate: A python object of the kind returned by the simplejson
+            and pyyaml load functions.  These objects represent structs as
+            dicts.
+        confix_type: The type to convert to.
+        convert_func: callable(type, value).  If specified, this is a
+                function to convert nested objects.
+
+    Returns:
+        A fix object corresponding to 'intermediate'.
+    """
+    if confix_type is None:
+        if isinstance(intermediate, list):
+            return [intermediate_to_obj(elem) for elem in intermediate]
+        elif isinstance(intermediate, dict):
+
+            # See if all of the keys are attribute names.
+            for key in intermediate:
+                if not ATTR_NAME_RX.match(key):
+                    # Nope.  Create a dict.
+                    return dict((key, intermediate_to_obj(val)) for key, val in
+                                intermediate.iteritems())
+                else:
+                    return dict_to_struct(intermediate)
+        else:
+            return intermediate
+    if issubclass(confix_type, Generic):
+        return confix_type.convert(intermediate, convert_with_dicts)
+    elif issubclass(confix_type, Struct):
+        return dict_to_struct(intermediate, confix_type,
+                              convert_func or
+                              (lambda t, v: intermediate_to_obj(v, t)))
+    else:
+        return _convert(confix_type, intermediate)
+
+
 class FieldDef:
     """
         A field definition.
@@ -196,7 +268,10 @@ class Struct(object):
         self._attrs[attr] = val
 
     def __cmp__(self, other):
-        return cmp(self._attrs, other._attrs)
+        if isinstance(other, Struct):
+            return cmp(self._attrs, other._attrs)
+        else:
+            return id(self) - id(other)
 
     def __dir__(self):
         return sorted(self._attrs.keys())
@@ -229,7 +304,7 @@ class Generic(object):
         raise NotImplementedError()
 
 
-class _List(Generic):
+class ListBase(Generic):
     """Base class for List<T>."""
 
     def __init__(self, elems):
@@ -266,8 +341,8 @@ class _List(Generic):
 
 
 # Cache to keep track of the generic types that we'va already created.  Keys
-# are tuples of the generic base class (e.g. '_List') followed by its
-# parameter types.  A list of strings would have the key (_List, str) .
+# are tuples of the generic base class (e.g. 'ListBase') followed by its
+# parameter types.  A list of strings would have the key (ListBase, str) .
 # Values are the constructed types themselves.
 _generic_cache = {}
 
@@ -276,15 +351,15 @@ def List(elem_type):
     """Returns a list class with the specified element type."""
     global _generic_cache
     try:
-        return _generic_cache[(_List, elem_type)]
+        return _generic_cache[(ListBase, elem_type)]
     except KeyError:
-        _generic_cache[(_List, elem_type)] = t = (
-            type('ListOf<%s>' % elem_type.__name__, (_List,),
+        _generic_cache[(ListBase, elem_type)] = t = (
+            type('ListOf<%s>' % elem_type.__name__, (ListBase,),
                  {'_elem_type': elem_type}))
         return t
 
 
-class _Map(Generic):
+class MapBase(Generic):
     """Base class for Map<T>."""
 
     def __init__(self, normal_map, convert_func=_convert):
@@ -349,11 +424,11 @@ def Map(key_type, val_type):
     """Returns a Map class with the specified key and value types."""
     global _generic_cache
     try:
-        return _generic_cache[_Map, key_type, val_type]
+        return _generic_cache[MapBase, key_type, val_type]
     except KeyError:
-        _generic_cache[_Map, key_type, val_type] = t = (
+        _generic_cache[MapBase, key_type, val_type] = t = (
             type('Map<%s, %s>' % (key_type.__name__, val_type.__name__),
-                 (_Map,),
+                 (MapBase,),
                  {'_key_type': key_type, '_val_type': val_type}))
         return t
 
@@ -407,6 +482,7 @@ def get_schema(struct):
     """
     return struct._schema
 
+
 def get_attrs(struct):
     """Returns the attributes of the structure as a dictionary.
 
@@ -417,3 +493,16 @@ def get_attrs(struct):
         dict of str: object.
     """
     return struct._attrs
+
+
+def setattr_with_convert_func(struct, attr, val, convert_func):
+    """Sets the attribute with the specified conversion function."""
+    # This is duplicated in Struct.__setattr__() because __setattr__ is used a
+    # lot and we don't want to make it too abstract.
+    try:
+        fieldDef = struct._schema[attr]
+        val = convert_func(fieldDef.type, val)
+    except KeyError:
+        if struct._strict:
+            raise AttributeError(attr)
+    struct._attrs[attr] = val

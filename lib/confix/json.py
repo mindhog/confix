@@ -17,6 +17,7 @@ import simplejson
 import confix
 
 
+# TODO: remove?
 def dict_to_struct(json_dict, struct_type=None):
     """Convert a dictionary representation of a JSON object to a Struct.
 
@@ -35,7 +36,7 @@ def dict_to_struct(json_dict, struct_type=None):
         struct_type = confix.LooseStruct
     result = struct_type()
     for key, val in json_dict.iteritems():
-        setattr(result, key, intermediate_to_obj(val))
+        setattr(result, key, confix.intermediate_to_obj(val))
     return result
 
 
@@ -51,36 +52,7 @@ def string_to_struct(string_val, struct_type=None):
         confix.Struct or confix.LooseStruct.
     """
     dict_val = simplejson.loads(string_val)
-    return dict_to_struct(dict_val, struct_type)
-
-
-def intermediate_to_obj(intermediate, confix_type=None):
-    """Converts from an intermediate representation to a confix object.
-
-    Args:
-        intermediate: A python object returned from a simplejson.load
-            function.  These objects represent json objects as dicts, json
-            lists as python lists, etc.
-        confix_type: The type to convert to.
-
-    Returns:
-        A fix object corresponding to 'intermediate'.
-    """
-    if confix_type is None:
-        if isinstance(intermediate, list):
-            return [intermediate_to_obj(elem) for elem in intermediate]
-        elif isinstance(intermediate, dict):
-            return dict((key, intermediate_to_obj(val)) for key, val in
-                        intermediate)
-        else:
-            return intermediate
-    if issubclass(confix_type, confix.Generic):
-        return confix_type.convert(intermediate, confix.convert_with_dicts)
-    elif issubclass(confix_type, confix.Struct):
-        return dict_to_struct(dict_val, struct_type)
-    else:
-        raise TypeError('%r is not a confix type (Generic or Struct)' %
-                        confix_type)
+    return confix.dict_to_struct(dict_val, struct_type)
 
 
 def string_to_obj(string_val, confix_type=None):
@@ -95,7 +67,7 @@ def string_to_obj(string_val, confix_type=None):
         confix.Struct.
     """
     intermediate_val = simplejson.loads(string_val)
-    return intermediate_to_obj(intermediate_val, confix_type)
+    return confix.intermediate_to_obj(intermediate_val, confix_type)
 
 
 def _encode(obj):
@@ -136,7 +108,7 @@ def read_struct(file, struct_type=None):
     """
     if isinstance(file, basestring):
         file = open(file)
-    return dict_to_struct(simplejson.load(file), struct_type)
+    return confix.dict_to_struct(simplejson.load(file), struct_type)
 
 def write_struct(file, struct):
     """Write the struct as JSON to the specified filename.
