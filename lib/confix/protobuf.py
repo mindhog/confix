@@ -37,9 +37,8 @@ from google.protobuf import descriptor
 from google.protobuf import descriptor_pb2
 from google.protobuf import message
 from google.protobuf import reflection
-from protoc import Importer, DiskSourceTree, StdErrErrorCollector, \
-    ToBinary
 import confix
+import protoc
 
 
 class MessageDef(object):
@@ -136,12 +135,10 @@ class ProtoLoader(object):
             roots: list of root directories or None.  The root directories to
                 load .proto files from, both user specified and imported ones.
         """
-        self.__source_tree = DiskSourceTree()
+        self.__compiler = protoc.ProtoCompiler.create()
         if roots:
             for root in roots:
-                self.__source_tree.MapPath('', root)
-        self.__error_collector = StdErrErrorCollector()
-        self.__importer = Importer(self.__source_tree, self.__error_collector)
+                self.__compiler.map_path('', root)
 
     def load(self, path):
         """Loads a protodefinition file and returns a proxy object for it.
@@ -159,11 +156,11 @@ class ProtoLoader(object):
         """
 
         # Load the file descriptor and convert it to a protobuf.
-        file_des = self.__importer.Import(path)
-        if not file_des:
+        serialized_file_des = self.__compiler.parse(path)
+        if not serialized_file_des:
             raise ProtoFileNotFound()
         file_des_pb = descriptor_pb2.FileDescriptorProto()
-        file_des_pb.MergeFromString(ToBinary(file_des))
+        file_des_pb.MergeFromString(serialized_file_des)
 
         result = ProtoDefFile()
 
