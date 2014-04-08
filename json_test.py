@@ -68,5 +68,21 @@ class JsonTest(unittest.TestCase):
         obj2 = json.read_struct('testfile.json', TestStruct)
         self.assertEquals(obj, obj2)
 
+    def testNestedObjects(self):
+        class Outer(confix.Struct):
+            inner = confix.FieldDef(TestStruct, 'nested struct type')
+            list = confix.FieldDef(confix.List(int), 'nested list')
+            map = confix.FieldDef(confix.Map(str, int), 'nested map')
+
+        obj = json.string_to_obj('{"inner": {"a": 1, "b": "val"}, '
+                                 ' "list": [1, 2, 3], "map": {"a": 1}}', Outer)
+        self.assertEquals(obj, Outer(inner=TestStruct(a=1, b='val'),
+                                     list=[1, 2, 3],
+                                     map={'a': 1}))
+        self.assertTrue(isinstance(obj.inner, TestStruct))
+        self.assertTrue(isinstance(obj.list, confix.List(int)))
+        obj2 = json.string_to_obj(json.struct_to_string(obj), Outer)
+        self.assertEquals(obj, obj2)
+
 if __name__ == '__main__':
     unittest.main()

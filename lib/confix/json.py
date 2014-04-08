@@ -78,9 +78,14 @@ def _encode(obj):
                 val = _encode(val)
             json_dict[attr] = val
         return json_dict
+    elif isinstance(obj, confix.ListBase):
+        return [_encode(item) for item in obj]
+    elif isinstance(obj, confix.MapBase):
+        return dict((str(_encode(key)), _encode(val))
+                    for key, val in obj.iteritems())
     else:
-        raise TypeError('cannot convert %r to json' % obj)
-
+        # This is not a confix type: just let the json encoder deal with it.
+        return obj
 
 def struct_to_string(struct):
     """Returns a JSON string representation of the struct.
