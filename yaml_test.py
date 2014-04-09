@@ -30,8 +30,8 @@ class YAMLTest(unittest.TestCase):
     def testBasics(self):
         string_rep = '{first: 100, second: some value}\n'
         obj = yaml.string_to_obj(string_rep, TestObj)
-        self.assertEquals(obj, TestObj(first=100, second='some value'))
-        self.assertEquals(yaml.obj_to_string(obj), string_rep)
+        self.assertEqual(obj, TestObj(first=100, second='some value'))
+        self.assertEqual(yaml.obj_to_string(obj), string_rep)
 
     def testReadWrite(self):
         out = StringIO()
@@ -39,12 +39,12 @@ class YAMLTest(unittest.TestCase):
                            map={'foo': 1, 'bar': 2})
         yaml.write_obj(out, init_obj)
         result = yaml.read_obj(StringIO(out.getvalue()), TestObj)
-        self.assertEquals(result, init_obj)
+        self.assertEqual(result, init_obj)
 
     def testDefaultConversions(self):
         obj = yaml.string_to_obj('{first: 100, second: some value}')
-        self.assertEquals(obj,
-                          confix.LooseStruct(first=100, second='some value'))
+        self.assertEqual(obj,
+                         confix.LooseStruct(first=100, second='some value'))
 
 if __name__ == '__main__':
     unittest.main()

@@ -23,8 +23,8 @@ class ProtobufTests(unittest.TestCase):
         loader = protobuf.ProtoLoader(roots=[''])
         MyMessage = loader.load('test.proto').MyMessage
         msg = MyMessage(a=100, b='data')
-        self.assertEquals(msg.a, 100)
-        self.assertEquals(msg.b, 'data')
+        self.assertEqual(msg.a, 100)
+        self.assertEqual(msg.b, 'data')
 
         # Make sure that an unknown attribute raises an AttributeError.
         def SetBlech():
@@ -36,15 +36,15 @@ class ProtobufTests(unittest.TestCase):
         MyMessage = loader.load('test.proto').MyMessage
         struct = MyMessage(a=100, b='data')
         msg = protobuf.struct_to_message(struct)
-        self.assertEquals(msg.a, 100)
-        self.assertEquals(msg.b, 'data')
+        self.assertEqual(msg.a, 100)
+        self.assertEqual(msg.b, 'data')
         self.assertFalse(msg.HasField('x'))
 
         # Serialize the message to a string and try to resurrect it as a
         # struct.
         bin_string = msg.SerializeToString()
         resurrected = protobuf.string_to_struct(bin_string, MyMessage)
-        self.assertEquals(resurrected, struct)
+        self.assertEqual(resurrected, struct)
 
     def testFileNotFound(self):
         loader = protobuf.ProtoLoader(roots=[''])
@@ -54,7 +54,7 @@ class ProtobufTests(unittest.TestCase):
         protobuf.clear_loader()
         protobuf.add_root('')
         MyMessage = protobuf.load('test.proto').MyMessage
-        self.assertEquals(MyMessage(a=100, b='data').a, 100)
+        self.assertEqual(MyMessage(a=100, b='data').a, 100)
 
         self.assertRaises(protobuf.LoaderAlreadyDefined,
                           protobuf.add_root, 'foo')

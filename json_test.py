@@ -25,48 +25,48 @@ class JsonTest(unittest.TestCase):
 
     def testFromJSON(self):
         obj = json.string_to_struct('{"a": 100, "b": "some value"}')
-        self.assertEquals(obj, confix.LooseStruct(a=100, b='some value'))
+        self.assertEqual(obj, confix.LooseStruct(a=100, b='some value'))
 
         obj = json.string_to_struct('{"a": 100, "b": "some value"}',
                                     TestStruct)
-        self.assertEquals(obj, TestStruct(a=100, b='some value'))
+        self.assertEqual(obj, TestStruct(a=100, b='some value'))
 
         obj = json.string_to_obj('[1, 2, 3]', confix.List(int))
-        self.assertEquals(obj, [1, 2, 3])
+        self.assertEqual(obj, [1, 2, 3])
 
         obj = json.string_to_obj('{"foo": 100, "bar": 200}',
                                  confix.Map(str, int))
-        self.assertEquals(obj, {'foo': 100, 'bar': 200})
+        self.assertEqual(obj, {'foo': 100, 'bar': 200})
 
         obj = json.string_to_obj('{"foo": {"a": 100, "b": "string val"}}',
                                  confix.Map(str, TestStruct))
-        self.assertEquals(obj, {'foo': TestStruct(a=100, b='string val')})
+        self.assertEqual(obj, {'foo': TestStruct(a=100, b='string val')})
 
         obj = json.string_to_obj(('[{"a": 1, "b": "two"}, '
                                   '{"a": 3, "b": "four"}]'),
                                  confix.List(TestStruct))
-        self.assertEquals(obj,
-                          [TestStruct(a=1, b="two"),
-                           TestStruct(a=3, b="four")])
+        self.assertEqual(obj,
+                         [TestStruct(a=1, b="two"),
+                          TestStruct(a=3, b="four")])
 
     def testToJson(self):
         obj = TestStruct(a=100, b='test val')
-        self.assertEquals(json.struct_to_string(obj),
-                          '{"a": 100, "b": "test val"}')
+        self.assertEqual(json.struct_to_string(obj),
+                         '{"a": 100, "b": "test val"}')
 
     def testReadWrite(self):
         obj = json.read_struct(StringIO.StringIO('{"a": 100, "b": "test val"}'),
                                TestStruct)
-        self.assertEquals(obj, TestStruct(a=100, b='test val'))
+        self.assertEqual(obj, TestStruct(a=100, b='test val'))
         out = StringIO.StringIO()
         json.write_struct(out, obj)
-        self.assertEquals(out.getvalue(), '{"a": 100, "b": "test val"}')
+        self.assertEqual(out.getvalue(), '{"a": 100, "b": "test val"}')
 
         # Try it with a real file.
         obj = TestStruct(a=100, b='test val')
         json.write_struct('testfile.json', obj)
         obj2 = json.read_struct('testfile.json', TestStruct)
-        self.assertEquals(obj, obj2)
+        self.assertEqual(obj, obj2)
 
     def testNestedObjects(self):
         class Outer(confix.Struct):
@@ -76,13 +76,13 @@ class JsonTest(unittest.TestCase):
 
         obj = json.string_to_obj('{"inner": {"a": 1, "b": "val"}, '
                                  ' "list": [1, 2, 3], "map": {"a": 1}}', Outer)
-        self.assertEquals(obj, Outer(inner=TestStruct(a=1, b='val'),
-                                     list=[1, 2, 3],
-                                     map={'a': 1}))
+        self.assertEqual(obj, Outer(inner=TestStruct(a=1, b='val'),
+                                    list=[1, 2, 3],
+                                    map={'a': 1}))
         self.assertTrue(isinstance(obj.inner, TestStruct))
         self.assertTrue(isinstance(obj.list, confix.List(int)))
         obj2 = json.string_to_obj(json.struct_to_string(obj), Outer)
-        self.assertEquals(obj, obj2)
+        self.assertEqual(obj, obj2)
 
 if __name__ == '__main__':
     unittest.main()
