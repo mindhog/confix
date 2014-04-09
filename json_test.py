@@ -24,11 +24,11 @@ class TestStruct(confix.Struct):
 class JsonTest(unittest.TestCase):
 
     def testFromJSON(self):
-        obj = json.string_to_struct('{"a": 100, "b": "some value"}')
+        obj = json.string_to_obj('{"a": 100, "b": "some value"}')
         self.assertEqual(obj, confix.LooseStruct(a=100, b='some value'))
 
-        obj = json.string_to_struct('{"a": 100, "b": "some value"}',
-                                    TestStruct)
+        obj = json.string_to_obj('{"a": 100, "b": "some value"}',
+                                 TestStruct)
         self.assertEqual(obj, TestStruct(a=100, b='some value'))
 
         obj = json.string_to_obj('[1, 2, 3]', confix.List(int))
@@ -51,21 +51,21 @@ class JsonTest(unittest.TestCase):
 
     def testToJson(self):
         obj = TestStruct(a=100, b='test val')
-        self.assertEqual(json.struct_to_string(obj),
+        self.assertEqual(json.obj_to_string(obj),
                          '{"a": 100, "b": "test val"}')
 
     def testReadWrite(self):
-        obj = json.read_struct(StringIO.StringIO('{"a": 100, "b": "test val"}'),
-                               TestStruct)
+        obj = json.read_obj(StringIO.StringIO('{"a": 100, "b": "test val"}'),
+                            TestStruct)
         self.assertEqual(obj, TestStruct(a=100, b='test val'))
         out = StringIO.StringIO()
-        json.write_struct(out, obj)
+        json.write_obj(out, obj)
         self.assertEqual(out.getvalue(), '{"a": 100, "b": "test val"}')
 
         # Try it with a real file.
         obj = TestStruct(a=100, b='test val')
-        json.write_struct('testfile.json', obj)
-        obj2 = json.read_struct('testfile.json', TestStruct)
+        json.write_obj('testfile.json', obj)
+        obj2 = json.read_obj('testfile.json', TestStruct)
         self.assertEqual(obj, obj2)
 
     def testNestedObjects(self):
@@ -81,7 +81,7 @@ class JsonTest(unittest.TestCase):
                                     map={'a': 1}))
         self.assertTrue(isinstance(obj.inner, TestStruct))
         self.assertTrue(isinstance(obj.list, confix.List(int)))
-        obj2 = json.string_to_obj(json.struct_to_string(obj), Outer)
+        obj2 = json.string_to_obj(json.obj_to_string(obj), Outer)
         self.assertEqual(obj, obj2)
 
 if __name__ == '__main__':

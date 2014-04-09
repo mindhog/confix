@@ -17,44 +17,6 @@ import simplejson
 import confix
 
 
-# TODO: remove?
-def dict_to_struct(json_dict, struct_type=None):
-    """Convert a dictionary representation of a JSON object to a Struct.
-
-    Converts a dictionary representation of a JSON object of the form created
-    by simplejson to a struct of the specified type.
-
-    Args:
-        json_dict: dict of str: object.
-        struct_type: type derived from confix.Struct or None. The struct type
-            to create an instance of.  If None, creates a confix.LooseStruct.
-
-    Returns:
-        confix.Struct or confix.LooseStruct.
-    """
-    if struct_type is None:
-        struct_type = confix.LooseStruct
-    result = struct_type()
-    for key, val in json_dict.iteritems():
-        setattr(result, key, confix.intermediate_to_obj(val))
-    return result
-
-
-def string_to_struct(string_val, struct_type=None):
-    """Convert a JSON string to a structure.
-
-    Args:
-        string_val: str.  A string containing a JSON object.
-        struct_type: type derived from confix.Struct or None. The struct type
-            to create an instance of.  If None, creates a confix.LooseStruct.
-
-    Returns:
-        confix.Struct or confix.LooseStruct.
-    """
-    dict_val = simplejson.loads(string_val)
-    return confix.dict_to_struct(dict_val, struct_type)
-
-
 def string_to_obj(string_val, confix_type=None):
     """Convert a JSON string to a confix object.
 
@@ -87,42 +49,40 @@ def _encode(obj):
         # This is not a confix type: just let the json encoder deal with it.
         return obj
 
-def struct_to_string(struct):
-    """Returns a JSON string representation of the struct.
+def obj_to_string(obj):
+    """Returns a JSON string representation of the confix object.
 
     Args:
-        struct: confix.Struct or confix.LooseStruct.
+        obj: confix.Struct or confix.Generic.
 
     Returns:
         str.
     """
-    return simplejson.dumps(struct, default=_encode)
+    return simplejson.dumps(obj, default=_encode)
 
-def read_struct(file, struct_type=None):
-    """Returns a json struct read from the specified file.
-
-    TODO(mmuller): Replace with read_obj()
+def read_obj(file, confix_type=None):
+    """Returns a confix object read from the specified file.
 
     Args:
         file: file object or filename string.
-        struct_type: type derived from confix.Struct or None. The struct type
-            to create an instance of.  If None, creates a confix.LooseStruct.
+        confix_type: type derived from confix.Struct or confix.Generic or
+            None. The struct type to create an instance of.  If None, infers
+            the type from the data, creating a confix.LooseStruct for all
+            dictionaries whose keys are legal attribute names.
 
     Returns:
-        Struct.
+        A confix object.
     """
     if isinstance(file, basestring):
         file = open(file)
-    return confix.dict_to_struct(simplejson.load(file), struct_type)
+    return confix.intermediate_to_obj(simplejson.load(file), confix_type)
 
-def write_struct(file, struct):
-    """Write the struct as JSON to the specified filename.
-
-    TODO(mmuller): Replace with write_obj.
+def write_obj(file, obj):
+    """Write the confix object as JSON to the specified file.
 
     Args:
         file: file object or filename string.
     """
     if isinstance(file, basestring):
         file = open(file, 'w')
-    file.write(struct_to_string(struct))
+    file.write(obj_to_string(obj))

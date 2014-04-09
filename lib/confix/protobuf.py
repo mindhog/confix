@@ -172,22 +172,24 @@ class ProtoLoader(object):
         return result
 
 
-def struct_to_message(struct):
-    """Returns a message object for the structure.
+def obj_to_message(obj):
+    """Returns a message object for the confix object.
 
     Args:
-        struct: confix.Struct.
+        obj: confix.Struct.  Normally translator methods would accept any
+            type of confix object, but protobufs require messages at the
+            top-level.
 
     Returns:
         google.protobuf.message.Message.
     """
-    msg_def = confix.get_translation_data(struct, MessageDef)
+    msg_def = confix.get_translation_data(obj, MessageDef)
     msg = msg_def.type()
     fdp = descriptor_pb2.FieldDescriptorProto
 
     for field in msg_def.descriptor_pb.field:
         try:
-            val = getattr(struct, field.name)
+            val = getattr(obj, field.name)
 
             # Don't set optional fields that are the default value.
             if (field.label != fdp.LABEL_OPTIONAL or
@@ -202,40 +204,42 @@ def struct_to_message(struct):
     return msg
 
 
-def message_to_struct(msg, struct_type):
-    """Converts a protobuf message to a Struct.
+def message_to_obj(msg, confix_type):
+    """Converts a protobuf message to a confix object.
 
     Args:
         msg: message.Message
-        struct_type: type derived from Struct.  The struct type to extract.
+        confix_type: type derived from Struct.  The object type to extract.
     """
-    result = struct_type()
-    for name, field_def in confix.get_schema(struct_type).iteritems():
+    result = confix_type()
+    for name, field_def in confix.get_schema(confix_type).iteritems():
         if msg.HasField(name):
             setattr(result, name, getattr(msg, name))
     return result
 
 
-def string_to_struct(string, struct_type):
-    """Returns an instance of 'struct_type' parsed from 'string'.
+def string_to_obj(string, confix_type):
+    """Returns an instance of 'confix_type' parsed from 'string'.
 
     Args:
         string: str.  A string containing a serialized protobuf of type
-            corresponding to 'struct'.
-        struct_type: type derived from confix.Struct.  The structure type that
-            we are returning an instance of.
+            corresponding to 'confix_type'.
+        confix_type: type derived from confix.Struct.  The structure type that
+            we are returning an instance of.  Generally confix translators can
+            deal with any type of confix object (generics and atomics as well
+            as structs) but protobufs require a message at the top-level.
 
     Returns:
-        Instance of struct_type.
+        Instance of confix_type.
 
     Raises:
-        KeyError: The struct_type has never been bound to a message type.
+        KeyError: The confix_type has never been bound to a message type.
     """
-    msg_def = confix.get_translation_data(struct_type, MessageDef)
+    msg_def = confix.get_translation_data(confix_type, MessageDef)
     msg = msg_def.type()
     msg.MergeFromString(string)
 
-    return message_to_struct(msg, struct_type)
+    return message_to_obj(msg, confix_type)
 
 
 # The global loader and its root directories.

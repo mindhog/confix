@@ -35,7 +35,7 @@ class ProtobufTests(unittest.TestCase):
         loader = protobuf.ProtoLoader(roots=[''])
         MyMessage = loader.load('test.proto').MyMessage
         struct = MyMessage(a=100, b='data')
-        msg = protobuf.struct_to_message(struct)
+        msg = protobuf.obj_to_message(struct)
         self.assertEqual(msg.a, 100)
         self.assertEqual(msg.b, 'data')
         self.assertFalse(msg.HasField('x'))
@@ -43,7 +43,7 @@ class ProtobufTests(unittest.TestCase):
         # Serialize the message to a string and try to resurrect it as a
         # struct.
         bin_string = msg.SerializeToString()
-        resurrected = protobuf.string_to_struct(bin_string, MyMessage)
+        resurrected = protobuf.string_to_obj(bin_string, MyMessage)
         self.assertEqual(resurrected, struct)
 
     def testFileNotFound(self):
