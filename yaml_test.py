@@ -21,8 +21,10 @@ from confix import yaml
 class TestObj(confix.Struct):
     first = confix.FieldDef(int, 'first field')
     second = confix.FieldDef(str, 'second field')
-    list = confix.FieldDef(confix.List(int), 'test list', default=confix.Undefined)
-    map = confix.FieldDef(confix.Map(str, int), 'test map', default=confix.Undefined)
+    list = confix.FieldDef(confix.List(int), 'test list',
+                           default=confix.Undefined)
+    map = confix.FieldDef(confix.Map(str, int), 'test map',
+                          default=confix.Undefined)
 
 
 class YAMLTest(unittest.TestCase):

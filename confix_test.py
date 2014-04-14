@@ -101,7 +101,8 @@ class ConfixTests(unittest.TestCase):
         self.assertRaises(TypeError, v.l.append, 100)
         self.assertRaises(TypeError, v.l.__setitem__, 0, 100)
         v.l.append('moe')
-        self.assertEqual(v.l, confix.List(str)(['eeny', 'meeny', 'miney', 'moe']))
+        self.assertEquals(v.l,
+                          confix.List(str)(['eeny', 'meeny', 'miney', 'moe']))
         v.l[0] = 'serious'
         self.assertEqual(v.l, ['serious', 'meeny', 'miney', 'moe'])
 
@@ -130,7 +131,7 @@ class ConfixTests(unittest.TestCase):
             v.m = 'blech!'
         self.assertRaises(TypeError, set_bad_val)
 
-        # Test value conversions
+    def testMapConversions(self):
         m = confix.Map(str, confix.List(int))({'a': [1, 2]})
         self.assertEqual(m, {'a': [1, 2]})
         self.assertEqual(m.setdefault('b', [0]), confix.List(int)([0]))
