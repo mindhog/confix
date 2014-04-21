@@ -37,9 +37,9 @@ from google.protobuf import descriptor
 from google.protobuf import descriptor_pb2
 from google.protobuf import message
 from google.protobuf import reflection
-import confix
 import protoc
 
+import confix
 
 class MessageDef(object):
     """A protobuf message definition.
@@ -96,10 +96,12 @@ def convert_to_struct(message):
             raise NotImplementedError("Use of type %d which hasn't been "
                                       "implemented yet")
 
-        default_val = (field.default_value if field.HasField('default_value') else
+        default_val = (field.default_value
+                       if field.HasField('default_value') else
                        confix.NoDefault)
 
-        field_def = confix.FieldDef(name=field.name, type=type, default=default_val)
+        field_def = confix.FieldDef(name=field.name, type=type,
+                                    default=default_val)
         schema[field.name] = field_def
 
     struct = confix.make_struct(str(message.name), schema)

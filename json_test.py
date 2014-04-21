@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=bad-indentation
+
+import os
 import StringIO
 import unittest
+
 import confix
 from confix import json
 
+
 class TestStruct(confix.Struct):
     a = confix.FieldDef(int, 'a variable')
-    b = confix.FieldDef(str, 'other variable')
+    b = confix.FieldDef(basestring, 'other variable')
 
-class JsonTest(unittest.TestCase):
+
+class SimpleJsonTest(unittest.TestCase):
 
     def testFromJSON(self):
         obj = json.string_to_obj('{"a": 100, "b": "some value"}')
@@ -35,24 +41,25 @@ class JsonTest(unittest.TestCase):
         self.assertEqual(obj, [1, 2, 3])
 
         obj = json.string_to_obj('{"foo": 100, "bar": 200}',
-                                 confix.Map(str, int))
+                                 confix.Map(basestring, int))
         self.assertEqual(obj, {'foo': 100, 'bar': 200})
 
         obj = json.string_to_obj('{"foo": {"a": 100, "b": "string val"}}',
-                                 confix.Map(str, TestStruct))
+                                 confix.Map(basestring, TestStruct))
         self.assertEqual(obj, {'foo': TestStruct(a=100, b='string val')})
 
         obj = json.string_to_obj(('[{"a": 1, "b": "two"}, '
                                   '{"a": 3, "b": "four"}]'),
                                  confix.List(TestStruct))
         self.assertEqual(obj,
-                         [TestStruct(a=1, b="two"),
-                          TestStruct(a=3, b="four")])
+                         [TestStruct(a=1, b='two'),
+                          TestStruct(a=3, b='four')])
 
     def testToJson(self):
         obj = TestStruct(a=100, b='test val')
-        self.assertEqual(json.obj_to_string(obj),
-                         '{"a": 100, "b": "test val"}')
+        result = json.obj_to_string(obj)
+        self.assertTrue(result == '{"a": 100, "b": "test val"}' or
+                        result == '{"b": "test val", "a": 100}')
 
     def testReadWrite(self):
         obj = json.read_obj(StringIO.StringIO('{"a": 100, "b": "test val"}'),
@@ -60,19 +67,25 @@ class JsonTest(unittest.TestCase):
         self.assertEqual(obj, TestStruct(a=100, b='test val'))
         out = StringIO.StringIO()
         json.write_obj(out, obj)
-        self.assertEqual(out.getvalue(), '{"a": 100, "b": "test val"}')
+
+        # Simplejson doesn't do deterministic ordering of output elements, so
+        # we have to test all permutations.
+        result = out.getvalue()
+        self.assertTrue(result == '{"a": 100, "b": "test val"}' or
+                        result == '{"b": "test val", "a": 100}')
 
         # Try it with a real file.
-        obj = TestStruct(a=100, b='test val')
-        json.write_obj('testfile.json', obj)
-        obj2 = json.read_obj('testfile.json', TestStruct)
+        obj = TestStruct(a=100, b='tset val')
+        testfile = 'testfile.json'
+        json.write_obj(testfile, obj)
+        obj2 = json.read_obj(testfile, TestStruct)
         self.assertEqual(obj, obj2)
 
     def testNestedObjects(self):
         class Outer(confix.Struct):
             inner = confix.FieldDef(TestStruct, 'nested struct type')
             list = confix.FieldDef(confix.List(int), 'nested list')
-            map = confix.FieldDef(confix.Map(str, int), 'nested map')
+            map = confix.FieldDef(confix.Map(basestring, int), 'nested map')
 
         obj = json.string_to_obj('{"inner": {"a": 1, "b": "val"}, '
                                  ' "list": [1, 2, 3], "map": {"a": 1}}', Outer)
@@ -83,6 +96,7 @@ class JsonTest(unittest.TestCase):
         self.assertTrue(isinstance(obj.list, confix.List(int)))
         obj2 = json.string_to_obj(json.obj_to_string(obj), Outer)
         self.assertEqual(obj, obj2)
+
 
 if __name__ == '__main__':
     unittest.main()

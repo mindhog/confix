@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import confix
 import unittest
+
+import confix
 
 
 class TestStruct(confix.Struct):
@@ -83,7 +84,7 @@ class ConfixTests(unittest.TestCase):
 
         # Verify that default fields are compared correctly.
         self.assertEqual(TestStruct(a=100),
-                          TestStruct(a=100, b='default value'))
+                         TestStruct(a=100, b='default value'))
 
     def testDir(self):
         self.assertEqual(dir(TestStruct(a=1, b='two')), ['a', 'b'])
@@ -115,9 +116,9 @@ class ConfixTests(unittest.TestCase):
         self.assertEqual(v.m, {'first': 100, 'second': 200})
         self.assertEqual(v.m['first'], 100)
         self.assertEqual(sorted(v.m.items()),
-                          [('first', 100), ('second', 200)])
+                         [('first', 100), ('second', 200)])
         self.assertEqual(sorted(v.m.iteritems()),
-                          [('first', 100), ('second', 200)])
+                         [('first', 100), ('second', 200)])
         self.assertEqual(sorted(v.m.keys()), ['first', 'second'])
         self.assertEqual(sorted(v.m.iterkeys()), ['first', 'second'])
         self.assertEqual(sorted(v.m.values()), [100, 200])
@@ -132,6 +133,7 @@ class ConfixTests(unittest.TestCase):
         self.assertRaises(TypeError, set_bad_val)
 
     def testMapConversions(self):
+        # Test value conversions
         m = confix.Map(str, confix.List(int))({'a': [1, 2]})
         self.assertEqual(m, {'a': [1, 2]})
         self.assertEqual(m.setdefault('b', [0]), confix.List(int)([0]))

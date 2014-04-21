@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import unittest
 
 from confix import protobuf
+
+TEST_PROTO = 'test.proto'
+PROTO_ROOT = ''
 
 
 class ProtobufTests(unittest.TestCase):
 
     def testProto(self):
-        loader = protobuf.ProtoLoader(roots=[''])
-        MyMessage = loader.load('test.proto').MyMessage
+        loader = protobuf.ProtoLoader(roots=[PROTO_ROOT])
+        MyMessage = loader.load(TEST_PROTO).MyMessage
         msg = MyMessage(a=100, b='data')
         self.assertEqual(msg.a, 100)
         self.assertEqual(msg.b, 'data')
@@ -32,8 +36,8 @@ class ProtobufTests(unittest.TestCase):
         self.assertRaises(AttributeError, SetBlech)
 
     def testMessageCreation(self):
-        loader = protobuf.ProtoLoader(roots=[''])
-        MyMessage = loader.load('test.proto').MyMessage
+        loader = protobuf.ProtoLoader(roots=[PROTO_ROOT])
+        MyMessage = loader.load(TEST_PROTO).MyMessage
         struct = MyMessage(a=100, b='data')
         msg = protobuf.obj_to_message(struct)
         self.assertEqual(msg.a, 100)
@@ -47,13 +51,14 @@ class ProtobufTests(unittest.TestCase):
         self.assertEqual(resurrected, struct)
 
     def testFileNotFound(self):
-        loader = protobuf.ProtoLoader(roots=[''])
-        self.assertRaises(protobuf.ProtoFileNotFound, loader.load, 'bogus.proto')
+        loader = protobuf.ProtoLoader(roots=[PROTO_ROOT])
+        self.assertRaises(protobuf.ProtoFileNotFound, loader.load,
+                          'bogus.proto')
 
     def testGlobalLoader(self):
         protobuf.clear_loader()
-        protobuf.add_root('')
-        MyMessage = protobuf.load('test.proto').MyMessage
+        protobuf.add_root(PROTO_ROOT)
+        MyMessage = protobuf.load(TEST_PROTO).MyMessage
         self.assertEqual(MyMessage(a=100, b='data').a, 100)
 
         self.assertRaises(protobuf.LoaderAlreadyDefined,

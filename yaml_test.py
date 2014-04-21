@@ -14,6 +14,7 @@
 
 from StringIO import StringIO
 import unittest
+
 import confix
 from confix import yaml
 

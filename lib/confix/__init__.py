@@ -12,28 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-    To define a record with a schema, create a subclass of Struct with a
-    schema:
+"""The confix core functionality.
 
-    class MyStruct(Struct):
-        foo = FieldDef(type=int, doc='foo field', default=100)
-        bar = FieldDef(type=str, doc='bar field')
+To define a record with a schema, create a subclass of Struct with a
+schema:
 
-    Fields may not begin with underscores, leading underscores are used by
-    the Struct classes for internal data.
+class MyStruct(Struct):
+    foo = FieldDef(type=int, doc='foo field', default=100)
+    bar = FieldDef(type=str, doc='bar field')
 
-    There are three kinds of fields:
-    Required fields: These must be defined by the user and have a value.  They
-        are indicated by creating a FieldDef with a default of NoDefault.
-    Defaulted Fields: These may be defined by the user, if not, they exist
-        with a default value.  They are indicated by creating a FieldDef with
-        a default of the default value.
-    Optional Fields: These may be defined by the user, if not, they can be
-        undefined.  Attempting to read them when they don't exist returns an
-        attribute error, hasattr() can be used to query whether they exist.
-        They can be indicated by creating a FieldDef with a default of
-        Undefined.
+Fields may not begin with underscores, leading underscores are used by
+the Struct classes for internal data.
+
+There are three kinds of fields:
+Required fields: These must be defined by the user and have a value.  They
+    are indicated by creating a FieldDef with a default of NoDefault.
+Defaulted Fields: These may be defined by the user, if not, they exist
+    with a default value.  They are indicated by creating a FieldDef with
+    a default of the default value.
+Optional Fields: These may be defined by the user, if not, they can be
+    undefined.  Attempting to read them when they don't exist returns an
+    attribute error, hasattr() can be used to query whether they exist.
+    They can be indicated by creating a FieldDef with a default of
+    Undefined.
 """
 
 import re
@@ -50,6 +51,22 @@ class Undefined(object):
 class _StructMetaclass(type):
 
     def __new__(mcls, name, bases, dict):
+        """Metaclass "new" function.
+
+        Creates an instance of a new Struct subclass.  This mainly verifies
+        simple attribute definitions and converts them to fields in the
+        _schema dictionary.
+
+        Returns:
+            A new Struct type.
+
+        Args:
+            mcls: (type) The type metaclass.
+            name: (str) The new class name.
+            bases: (type, ...) The base class list for the new class.
+            dict: ({str: object}) The name dictionary parsed out of the body
+                of the class.
+        """
         schema = {}
         for attr, val in dict.iteritems():
             if not attr.startswith('_'):
@@ -115,6 +132,13 @@ def convert_with_dicts(type, val):
 
     This is different from _convert in that it accepts dicts when converting
     to a Struct.
+
+    Args:
+        type: A confix type object.
+        val: (object) the value to be converted.
+
+    Returns:
+        An instance of 'type'.
     """
     try:
         return _convert(type, val, convert_with_dicts)

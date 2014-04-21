@@ -15,6 +15,7 @@
 """Confix YAML translator."""
 
 from StringIO import StringIO
+
 import confix
 
 # Use the low-level __import__ function to implement the global yaml module.
@@ -23,11 +24,38 @@ yaml = __import__('yaml')
 
 
 def read_obj(file, confix_type=None):
-    """Read an object from the file."""
-    return confix.intermediate_to_obj(yaml.load(file), confix_type)
+    """Read an object from the file.
+
+    Args:
+        file: (file) File object to read from.
+        confix_type: (confix type or None) This is the type of the top-level
+            object.  If None, does a best effort translation, converting
+            top-level dictionaries to LooseStruct, and converting most nested
+            types to their corresponding python types.
+            TODO(mmuller): Improve best-effort, convert nested dicts to
+            LooseStructs when appropriate.
+
+    Returns:
+        A confix object.
+    """
+    return confix.intermediate_to_obj(yaml.safe_load(file), confix_type)
 
 
 def string_to_obj(yaml_string, confix_type=None):
+    """Read an object from a string.
+
+    Args:
+        yaml_string: (str) String containing a yaml object representation.
+        confix_type: (confix type or None) This is the type of the top-level
+            object.  If None, does a best effort translation, converting
+            top-level dictionaries to LooseStruct, and converting most nested
+            types to their corresponding python types.
+            TODO(mmuller): Improve best-effort, convert nested dicts to
+            LooseStructs when appropriate.
+
+    Returns:
+        A confix object.
+    """
     return read_obj(StringIO(yaml_string), confix_type)
 
 
@@ -54,11 +82,28 @@ def _to_intermediate(obj):
 
 
 def write_obj(file, obj, default_flow_style=True):
-    """Writes 'obj' as a json file."""
-    yaml.dump(_to_intermediate(obj), file, default_flow_style=default_flow_style)
+    """Writes 'obj' as a json file.
+
+    Args:
+        file: (file) The file object to write to.
+        obj: (confix object) Te object to write.
+        default_flow_style: (bool) If true, nested yaml objects are written in
+            "flow" format (with lists and dicts on a single line) when the
+            underlying code deems appropriate.
+    """
+    yaml.dump(_to_intermediate(obj), file,
+              default_flow_style=default_flow_style)
 
 
 def obj_to_string(obj, default_flow_style=True):
+    """Returns 'obj' as a json string.
+
+    Args:
+        obj: (confix object) Te object to write.
+        default_flow_style: (bool) If true, nested yaml objects are written in
+            "flow" format (with lists and dicts on a single line) when the
+            underlying code deems appropriate.
+    """
     dst = StringIO()
     write_obj(dst, obj, default_flow_style=default_flow_style)
     return dst.getvalue()
